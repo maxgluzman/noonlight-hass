@@ -11,5 +11,5 @@
   "issue_tracker": "https://github.com/konnected-io/noonlight-hass/issues",
   "requirements": ["noonlight>=0.2.0"],
   "single_config_entry": true,
-  "version":"v1.2.0"
+  "version":"v1.2.1"
 }
