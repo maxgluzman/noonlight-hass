@@ -4,7 +4,7 @@ create_alarm:
   fields:
     service:
       name: Service
-      description: Service that the alarm should call (police, fire, medical)
+      description: Service that the alarm should call (police, fire, medical, other)
       required: true
       example: "police"
       default: "police"
@@ -14,3 +14,63 @@ create_alarm:
             - "police"
             - "fire"
             - "medical"
+            - "other"
+    name:
+      name: Name
+      description: Name of the person associated with the alarm.
+      required: false
+      example: "John Smith"
+      selector:
+        text:
+    phone:
+      name: Phone
+      description: Verified phone number of the person.
+      required: false
+      example: "15554440003"
+      selector:
+        text:
+    workflow_id:
+      name: Workflow ID
+      description: Optional workflow ID for custom handling.
+      required: false
+      example: "custom_workflow"
+      selector:
+        text:
+
+send_event:
+  name: Send Event
+  description: Sends a contextual event to an active alarm (e.g., video footage).
+  fields:
+    event_type:
+      name: Event Type
+      description: Type of event (e.g., alarm.device.activated_alarm)
+      required: true
+      example: "alarm.device.activated_alarm"
+      selector:
+        text:
+    meta:
+      name: Metadata
+      description: Dictionary of metadata (e.g., attribute, media URL).
+      required: false
+      example: { "attribute": "camera", "media": "http://example.com/video.mp4" }
+      selector:
+        object:
+
+create_verification:
+  name: Create Verification
+  description: Requests human verification for a specific prompt and media.
+  fields:
+    prompt:
+      name: Prompt
+      description: The Yes/No question for the verifier.
+      required: true
+      example: "Is there a person visible?"
+      selector:
+        text:
+    attachments:
+      name: Attachments
+      description: List of images or a single video URL.
+      required: false
+      example: [{ "url": "http://example.com/image.jpg" }]
+      selector:
+        object:

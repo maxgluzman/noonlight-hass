@@ -119,10 +119,49 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_create_alarm_service(call):
         """Create a noonlight alarm from a service"""
         service = call.data.get("service", None)
-        await noonlight_integration.create_alarm(alarm_types=[service])
+        name = call.data.get("name", None)
+        phone = call.data.get("phone", None)
+        workflow_id = call.data.get("workflow_id", None)
+        await noonlight_integration.create_alarm(
+            alarm_types=[service], name=name, phone=phone, workflow_id=workflow_id
+        )
 
     hass.services.async_register(
         DOMAIN, CONST_NOONLIGHT_HA_SERVICE_CREATE_ALARM, handle_create_alarm_service
+    )
+
+    async def handle_send_event_service(call):
+        """Send an event to an active alarm"""
+        event_type = call.data.get("event_type")
+        meta = call.data.get("meta", {})
+        if noonlight_integration._alarm is not None:
+            alarm_id = noonlight_integration._alarm.id
+            await noonlight_integration.client.create_event(id=alarm_id, body=[{
+                "event_type": event_type,
+                "event_time": dt_util.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                "meta": meta
+            }])
+        else:
+            _LOGGER.warning("No active alarm to send event to")
+
+    hass.services.async_register(
+        DOMAIN, "send_event", handle_send_event_service
+    )
+
+    async def handle_create_verification_service(call):
+        """Create a verification task"""
+        body = {
+            "prompt": call.data.get("prompt"),
+            "attachments": call.data.get("attachments", [])
+        }
+        for key in ["person_id", "location_id", "device_id"]:
+            if key in call.data:
+                body[key] = call.data[key]
+        
+        await noonlight_integration.client.create_verification(body=body)
+
+    hass.services.async_register(
+        DOMAIN, "create_verification", handle_create_verification_service
     )
 
     async def check_api_token(now):
@@ -294,7 +333,7 @@ class NoonlightIntegration:
         if self._alarm is not None:
             return await self._alarm.get_status()
 
-    async def create_alarm(self, alarm_types=[nl.NOONLIGHT_SERVICES_POLICE]):
+    async def create_alarm(self, alarm_types=[nl.NOONLIGHT_SERVICES_POLICE], name=None, phone=None, workflow_id=None):
         """Create a new alarm"""
         services = {}
         for alarm_type in alarm_types or ():
@@ -302,9 +341,16 @@ class NoonlightIntegration:
                 services[alarm_type] = True
         if self._alarm is None:
             try:
+                alarm_body = {
+                    "name": name,
+                    "phone": phone,
+                }
+                if workflow_id:
+                    alarm_body["workflow_id"] = workflow_id
+
                 if len(self.addline1) > 0:
-                    alarm_body = {
-                        "location.address": {
+                    alarm_body["location"] = {
+                        "address": {
                             "line1": self.addline1,
                             "city": self.addcity,
                             "state": self.addstate,
@@ -312,10 +358,10 @@ class NoonlightIntegration:
                         }
                     }
                     if len(self.addline2) > 0:
-                        alarm_body["location.address"]["line2"] = self.addline2
+                        alarm_body["location"]["address"]["line2"] = self.addline2
                 else:
-                    alarm_body = {
-                        "location.coordinates": {
+                    alarm_body["location"] = {
+                        "coordinates": {
                             "lat": self.latitude,
                             "lng": self.longitude,
                             "accuracy": 5,
