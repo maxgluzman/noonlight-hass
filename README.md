@@ -78,6 +78,13 @@ Fields:
 - `prompt`: The Yes/No question for the verifier.
 - `attachments`: List of images or a single video URL.
 
+### `noonlight.add_person`
+Adds a person to an active alarm. Useful for adding family members or guests to the alert list.
+
+Fields:
+- `name`: Name of the person.
+- `phone`: Verified phone number.
+
 ## Automation Examples
 
 ### Notify Noonlight when an intrusion alarm is triggered

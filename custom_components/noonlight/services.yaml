@@ -74,3 +74,22 @@ create_verification:
       example: [{ "url": "http://example.com/image.jpg" }]
       selector:
         object:
+
+add_person:
+  name: Add Person
+  description: Adds a person to an active alarm.
+  fields:
+    name:
+      name: Name
+      description: Name of the person to add.
+      required: true
+      example: "Jane Doe"
+      selector:
+        text:
+    phone:
+      name: Phone
+      description: Verified phone number of the person.
+      required: true
+      example: "15554440002"
+      selector:
+        text:

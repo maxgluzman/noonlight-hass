@@ -148,6 +148,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         DOMAIN, "send_event", handle_send_event_service
     )
 
+    async def handle_add_person_service(call):
+        """Add a person to an active alarm"""
+        name = call.data.get("name")
+        phone = call.data.get("phone")
+        if noonlight_integration._alarm is not None:
+            alarm_id = noonlight_integration._alarm.id
+            await noonlight_integration.client.create_people(id=alarm_id, body=[{
+                "name": name,
+                "phone": phone
+            }])
+        else:
+            _LOGGER.warning("No active alarm to add person to")
+
+    hass.services.async_register(
+        DOMAIN, "add_person", handle_add_person_service
+    )
+
     async def handle_create_verification_service(call):
         """Create a verification task"""
         body = {
