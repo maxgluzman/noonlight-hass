@@ -12,7 +12,7 @@ Noonlight connects to emergency 9-1-1 services in all 50 U.S. states. Backed by 
 
 When integrated with Home Assistant, a **Noonlight Alarm** switch will appear in your list of entities. When the Noonlight Alarm switch is turned _on_, this will send an emergency signal to Noonlight. You will be contacted by text and voice at the phone number associated with your Noonlight account. If you confirm the emergency with the Noonlight operator, or if you're unable to respond, Noonlight will dispatch local emergency services to your home using the [longitude and latitude coordinates](https://www.home-assistant.io/docs/configuration/basic/#latitude) specified in your Home Assistant configuration or an address you specify in the Noonlight configuration.
 
-Additionally, a new service will be exposed to Home Assistant: `noonlight.create_alarm`, which allows you to explicitly specify the type of emergency service required by the alarm: medical, fire, or police. By default, the switch entity assumes "police".
+Additionally, the service `noonlight.create_alarm` allows you to explicitly specify the type of emergency service required by the alarm: medical, fire, police, or other. By default, the switch entity assumes "police". In V2, you can also provide a name, phone number, and workflow ID.
 
 **False alarm?** No problem. Just tell the Noonlight operator your PIN when you are contacted and the alarm will be canceled. We're glad you're safe!
 
@@ -60,6 +60,24 @@ Setup requires a U.S. based mobile phone number.
 
 * `Zip`: Zip code
 
+## Advanced Services (API V2)
+
+This integration supports Noonlight API V2 features via additional services:
+
+### `noonlight.send_event`
+Sends contextual events to an active alarm. Useful for providing video footage or specific sensor data.
+
+Fields:
+- `event_type`: Type of event (e.g., `alarm.device.activated_alarm`)
+- `meta`: Dictionary of metadata (e.g., `{ "attribute": "camera", "media": "http://example.com/video.mp4" }`)
+
+### `noonlight.create_verification`
+Requests human verification for a specific prompt and media.
+
+Fields:
+- `prompt`: The Yes/No question for the verifier.
+- `attachments`: List of images or a single video URL.
+
 ## Automation Examples
 
 ### Notify Noonlight when an intrusion alarm is triggered
@@ -94,6 +112,47 @@ automation:
       - service: noonlight.create_alarm
         data:
           service: fire
+
+### Send video footage event when camera detects motion during alarm
+
+```yaml
+automation:
+  - alias: 'Send video to Noonlight when motion detected during alarm'
+    trigger:
+      - platform: state
+        entity_id: 
+          - binary_sensor.camera_motion
+        to: 'on'
+    condition:
+      - condition: state
+        entity_id: switch.noonlight_alarm
+        state: 'on'
+    action:
+      - service: noonlight.send_event
+        data:
+          event_type: alarm.device.activated_alarm
+          meta:
+            attribute: camera
+            media: "http://example.com/camera_clip.mp4"
+```
+
+### Create a verification task for human review
+
+```yaml
+automation:
+  - alias: 'Request verification for a person detected'
+    trigger:
+      - platform: state
+        entity_id: 
+          - binary_sensor.person_detected
+        to: 'on'
+    action:
+      - service: noonlight.create_verification
+        data:
+          prompt: "Is there a person visible in the driveway?"
+          attachments:
+            - url: "http://example.com/snapshot.jpg"
+```
 ```
 
 ## Warnings & Disclaimers
