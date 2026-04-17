@@ -112,6 +112,26 @@ automation:
       - service: noonlight.create_alarm
         data:
           service: fire
+```
+
+### Notify Noonlight for non-police/fire/medical emergencies (e.g., Water Leak)
+
+```yaml
+automation:
+  - alias: 'Activate the Noonlight Alarm for water leak'
+    trigger:
+      - platform: state
+        entity_id: 
+          - binary_sensor.water_leak_sensor
+        to: 'on'        
+    action:
+      - service: noonlight.create_alarm
+        data:
+          service: other
+          name: "John Smith"
+          phone: "15554440003"
+          workflow_id: "water_leak_workflow"
+```
 
 ### Send video footage event when camera detects motion during alarm
 
