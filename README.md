@@ -79,11 +79,13 @@ Fields:
 - `attachments`: List of images or a single video URL.
 
 ### `noonlight.add_person`
-Adds a person to an active alarm. Useful for adding family members or guests to the alert list.
+Adds multiple people to an active alarm. Useful for adding family members or guests to the alert list.
+
+> [!IMPORTANT]
+> According to Noonlight documentation, you can only call this endpoint **once per alarm**. You should pass all people you want to add in a single service call.
 
 Fields:
-- `name`: Name of the person.
-- `phone`: Verified phone number.
+- `people`: List of people objects (each containing `name` and `phone`).
 
 ## Automation Examples
 
