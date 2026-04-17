@@ -86,3 +86,15 @@ add_person:
       example: [{ "name": "Sue Smith", "phone": "14445550003" }, { "name": "Sam Smith", "phone": "15554440002" }]
       selector:
         object:
+
+cancel_alarm:
+  name: Cancel Alarm
+  description: Cancels an active alarm.
+  fields:
+    pin:
+      name: PIN
+      description: Optional PIN to cancel the alarm.
+      required: false
+      example: "1234"
+      selector:
+        text:

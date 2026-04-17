@@ -87,6 +87,12 @@ Adds multiple people to an active alarm. Useful for adding family members or gue
 Fields:
 - `people`: List of people objects (each containing `name` and `phone`).
 
+### `noonlight.cancel_alarm`
+Cancels an active alarm.
+
+Fields:
+- `pin`: Optional PIN to cancel the alarm.
+
 ## Automation Examples
 
 ### Notify Noonlight when an intrusion alarm is triggered

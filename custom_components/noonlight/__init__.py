@@ -161,6 +161,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         DOMAIN, "add_person", handle_add_person_service
     )
 
+    async def handle_cancel_alarm_service(call):
+        """Cancel an active alarm"""
+        pin = call.data.get("pin")
+        if noonlight_integration._alarm is not None:
+            alarm_id = noonlight_integration._alarm.id
+            await noonlight_integration.client.cancel_alarm(id=alarm_id, pin=pin)
+        else:
+            _LOGGER.warning("No active alarm to cancel")
+
+    hass.services.async_register(
+        DOMAIN, "cancel_alarm", handle_cancel_alarm_service
+    )
+
     async def handle_create_verification_service(call):
         """Create a verification task"""
         body = {
