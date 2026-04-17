@@ -16,7 +16,10 @@ async def async_setup_entry(
     """Set up the Noonlight text entities from a config entry."""
     noonlight_integration = hass.data[DOMAIN][config_entry.entry_id]
     
-    async_add_entities([NoonlightEventText(noonlight_integration)])
+    async_add_entities([
+        NoonlightEventText(noonlight_integration),
+        NoonlightPinText(noonlight_integration)
+    ])
 
 class NoonlightEventText(TextEntity):
     """Text entity to input custom event messages."""
@@ -41,4 +44,29 @@ class NoonlightEventText(TextEntity):
         """Change the text value."""
         self._attr_native_value = value
         self.noonlight.event_text_input = value
+        self.async_write_ha_state()
+
+class NoonlightPinText(TextEntity):
+    """Text entity to input alarm PIN for cancellation."""
+    
+    def __init__(self, noonlight_integration):
+        """Initialize the text entity."""
+        self.noonlight = noonlight_integration
+        self._attr_name = "Alarm PIN"
+        self._attr_unique_id = f"alarm_pin_{self.noonlight.config.get('id', 'default')}"
+        self._attr_native_value = ""
+        self._attr_icon = "mdi:numeric"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, self.noonlight.config.get('id', 'default'))},
+            "name": "Noonlight Alarm",
+            "manufacturer": "Noonlight",
+            "model": "V2 Dispatch",
+        }
+        # Initialize integration state
+        self.noonlight.pin_input = self._attr_native_value
+
+    async def async_set_value(self, value: str) -> None:
+        """Change the text value."""
+        self._attr_native_value = value
+        self.noonlight.pin_input = value
         self.async_write_ha_state()

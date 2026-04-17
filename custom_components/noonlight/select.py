@@ -16,7 +16,13 @@ async def async_setup_entry(
     """Set up the Noonlight select entities from a config entry."""
     noonlight_integration = hass.data[DOMAIN][config_entry.entry_id]
     
-    async_add_entities([NoonlightServiceSelect(noonlight_integration)])
+    entities = [NoonlightServiceSelect(noonlight_integration)]
+    
+    # Only add the mode select if a test token was provided
+    if getattr(noonlight_integration, 'test_token', ''):
+        entities.append(NoonlightModeSelect(noonlight_integration))
+        
+    async_add_entities(entities)
 
 class NoonlightServiceSelect(SelectEntity):
     """Select entity to choose the emergency service type."""
@@ -44,5 +50,33 @@ class NoonlightServiceSelect(SelectEntity):
             self._attr_current_option = option
             self.noonlight.selected_service = option
             self.async_write_ha_state()
+        else:
+            _LOGGER.warning("Invalid option selected: %s", option)
+
+class NoonlightModeSelect(SelectEntity):
+    """Select entity to choose the API environment (Production or Sandbox)."""
+    
+    def __init__(self, noonlight_integration):
+        """Initialize the select entity."""
+        self.noonlight = noonlight_integration
+        self._attr_name = "Environment Mode"
+        self._attr_unique_id = f"environment_mode_{self.noonlight.config.get('id', 'default')}"
+        self._attr_options = ["Production", "Sandbox"]
+        self._attr_current_option = self.noonlight.active_mode
+        self._attr_icon = "mdi:server-network"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, self.noonlight.config.get('id', 'default'))},
+            "name": "Noonlight Alarm",
+            "manufacturer": "Noonlight",
+            "model": "V2 Dispatch",
+        }
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option."""
+        if option in self._attr_options:
+            self._attr_current_option = option
+            self.noonlight.active_mode = option
+            self.async_write_ha_state()
+            _LOGGER.debug("Switched Noonlight mode to %s", option)
         else:
             _LOGGER.warning("Invalid option selected: %s", option)

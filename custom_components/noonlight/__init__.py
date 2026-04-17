@@ -1,6 +1,8 @@
 """Noonlight integration for Home Assistant."""
 
 import logging
+import json
+import time
 from datetime import timedelta
 
 import homeassistant.helpers.config_validation as cv
@@ -33,6 +35,12 @@ from .const import (
     CONF_STATE,
     CONF_TOKEN_ENDPOINT,
     CONF_ZIP,
+    CONF_TEST_TOKEN,
+    CONF_TEST_API_ENDPOINT,
+    CONF_ALARM_NAME,
+    CONF_ALARM_PHONE,
+    MODE_PRODUCTION,
+    MODE_SANDBOX,
     CONST_ALARM_STATUS_ACTIVE,
     CONST_ALARM_STATUS_CANCELED,
     CONST_NOONLIGHT_HA_SERVICE_CREATE_ALARM,
@@ -136,11 +144,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         meta = call.data.get("meta", {})
         if noonlight_integration._alarm is not None:
             alarm_id = noonlight_integration._alarm.id
-            await noonlight_integration.client.create_event(id=alarm_id, body=[{
+            event_body = [{
                 "event_type": event_type,
                 "event_time": dt_util.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                 "meta": meta
-            }])
+            }]
+            noonlight_integration.show_api_diagnostic("Send Event", noonlight_integration.active_client, f"{noonlight_integration.active_client.alarms_url}/{alarm_id}/events", event_body)
+            await noonlight_integration.active_client.create_event(id=alarm_id, body=event_body)
             noonlight_integration.last_event = {"event_type": event_type, "meta": meta}
             from homeassistant.helpers.dispatcher import async_dispatcher_send
             async_dispatcher_send(hass, "noonlight_alarm_state_changed")
@@ -156,7 +166,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         people = call.data.get("people", [])
         if noonlight_integration._alarm is not None:
             alarm_id = noonlight_integration._alarm.id
-            await noonlight_integration.client.create_people(id=alarm_id, body=people)
+            await noonlight_integration.active_client.create_people(id=alarm_id, body=people)
         else:
             _LOGGER.warning("No active alarm to add people to")
 
@@ -167,11 +177,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     async def handle_cancel_alarm_service(call):
         """Cancel an active alarm"""
         pin = call.data.get("pin")
-        if noonlight_integration._alarm is not None:
-            alarm_id = noonlight_integration._alarm.id
-            await noonlight_integration.client.cancel_alarm(id=alarm_id, pin=pin)
-        else:
-            _LOGGER.warning("No active alarm to cancel")
+        await noonlight_integration.cancel_alarm(pin=pin)
 
     hass.services.async_register(
         DOMAIN, "cancel_alarm", handle_cancel_alarm_service
@@ -187,7 +193,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             if key in call.data:
                 body[key] = call.data[key]
         
-        await noonlight_integration.client.create_verification(body=body)
+        await noonlight_integration.active_client.create_verification(body=body)
 
     hass.services.async_register(
         DOMAIN, "create_verification", handle_create_verification_service
@@ -268,6 +274,20 @@ class NoonlightIntegration:
         )
         self.client.set_base_url(self.config[CONF_API_ENDPOINT])
 
+        self.test_token = self.config.get(CONF_TEST_TOKEN, "")
+        self.test_api_endpoint = self.config.get(CONF_TEST_API_ENDPOINT, "https://api-sandbox.noonlight.com/dispatch/v1")
+        
+        self.test_client = None
+        if self.test_token:
+            self.test_client = nl.NoonlightClient(
+                token=self.test_token, session=self._websession
+            )
+            self.test_client.set_base_url(self.test_api_endpoint)
+            
+        self.active_mode = MODE_PRODUCTION
+        self.alarm_name = self.config.get(CONF_ALARM_NAME, "")
+        self.alarm_phone = self.config.get(CONF_ALARM_PHONE, "")
+
         # Add address portions, if exist
         self.addline1 = self.config.get(CONF_ADDRESS_LINE1, "")
         self.addline2 = self.config.get(CONF_ADDRESS_LINE2, "")
@@ -279,6 +299,33 @@ class NoonlightIntegration:
         self.trigger_time = None
         self.trigger_reason = None
         self.next_poll_time = None
+
+    @property
+    def active_client(self):
+        """Return the client for the active mode."""
+        if self.active_mode == MODE_SANDBOX and self.test_client:
+            return self.test_client
+        return self.client
+
+    def show_api_diagnostic(self, title: str, client, endpoint: str, body: dict):
+        """Show a persistent notification with API call details."""
+        token = client.token if hasattr(client, 'token') else "N/A"
+        
+        # Mask the token for safety (show only last 4 chars)
+        masked_token = token
+        if token and len(token) > 4:
+             masked_token = "*" * (len(token) - 4) + token[-4:]
+             
+        message = f"**Endpoint**: {endpoint}\n\n"
+        message += f"**Token**: `{masked_token}`\n\n"
+        message += f"**Payload**:\n```json\n{json.dumps(body, indent=2)}\n```"
+        
+        persistent_notification.create(
+            self.hass,
+            message,
+            title=f"Noonlight Diagnostic: {title}",
+            notification_id=f"noonlight_diagnostic_{int(time.time())}"
+        )
 
     @property
     def latitude(self):
@@ -375,10 +422,13 @@ class NoonlightIntegration:
                 services[alarm_type] = True
         if self._alarm is None:
             try:
-                alarm_body = {
-                    "name": name,
-                    "phone": phone,
-                }
+                alarm_body = {}
+                actual_name = name or self.alarm_name
+                actual_phone = phone or self.alarm_phone
+                if actual_name:
+                    alarm_body["name"] = actual_name
+                if actual_phone:
+                    alarm_body["phone"] = actual_phone
                 if workflow_id:
                     alarm_body["workflow_id"] = workflow_id
 
@@ -403,7 +453,8 @@ class NoonlightIntegration:
                     }
                 if len(services) > 0:
                     alarm_body["services"] = services
-                self._alarm = await self.client.create_alarm(body=alarm_body)
+                self.show_api_diagnostic("Create Alarm", self.active_client, self.active_client.alarms_url, alarm_body)
+                self._alarm = await self.active_client.create_alarm(body=alarm_body)
             except nl.NoonlightClient.ClientError as client_error:
                 persistent_notification.create(
                     self.hass,
@@ -413,7 +464,10 @@ class NoonlightIntegration:
                     NOTIFICATION_ALARM_CREATE_FAILURE,
                 )
             if self._alarm and self._alarm.status == CONST_ALARM_STATUS_ACTIVE:
+                self.trigger_time = dt_util.utcnow()
+                self.trigger_reason = f"Manually triggered via switch ({alarm_types})"
                 async_dispatcher_send(self.hass, EVENT_NOONLIGHT_ALARM_CREATED)
+                async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
                 _LOGGER.debug(
                     "noonlight alarm has been initiated. " "id: %s status: %s",
                     self._alarm.id,
@@ -431,7 +485,43 @@ class NoonlightIntegration:
                             if self._alarm.status == CONST_ALARM_STATUS_CANCELED:
                                 self._alarm = None
                         async_dispatcher_send(self.hass, EVENT_NOONLIGHT_ALARM_CANCELED)
+                        async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
 
                 cancel_interval = async_track_time_interval(
                     self.hass, check_alarm_status_interval, timedelta(seconds=15)
                 )
+
+    async def cancel_alarm(self, pin=None):
+        """Cancel the active alarm via direct API call."""
+        from homeassistant.helpers.dispatcher import async_dispatcher_send
+        if self._alarm is not None:
+            alarm_id = self._alarm.id
+            
+            if self.active_mode == "sandbox":
+                token = self.test_token
+            else:
+                token = self._access_token_response.get("token")
+                
+            url = f"{self.active_client.alarms_url}/{alarm_id}/status"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+            payload = {"status": "CANCELED"}
+            
+            _LOGGER.debug("Cancelling alarm via direct API call to %s", url)
+            
+            async with self._websession.post(url, headers=headers, json=payload) as resp:
+                if resp.status in (200, 204, 201):
+                    _LOGGER.info("Successfully cancelled alarm %s", alarm_id)
+                    self._alarm = None
+                    async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
+                    return True
+                else:
+                    error_text = await resp.text()
+                    _LOGGER.error("Failed to cancel alarm %s: %s", alarm_id, error_text)
+                    return False
+        else:
+            _LOGGER.warning("No active alarm to cancel")
+            return False

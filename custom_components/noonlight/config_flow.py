@@ -19,6 +19,10 @@ from .const import (
     CONF_STATE,
     CONF_TOKEN_ENDPOINT,
     CONF_ZIP,
+    CONF_TEST_TOKEN,
+    CONF_TEST_API_ENDPOINT,
+    CONF_ALARM_NAME,
+    CONF_ALARM_PHONE,
     DEFAULT_API_ENDPOINT,
     DEFAULT_NAME,
     DEFAULT_TOKEN_ENDPOINT,
@@ -117,6 +121,22 @@ async def _async_build_noonlight_schema(
             vol.Required(
                 CONF_TOKEN_ENDPOINT,
                 default=_get_default(CONF_TOKEN_ENDPOINT),
+            ): selector.TextSelector(selector.TextSelectorConfig()),
+            vol.Required(
+                CONF_ALARM_NAME,
+                default=_get_default(CONF_ALARM_NAME),
+            ): selector.TextSelector(selector.TextSelectorConfig()),
+            vol.Required(
+                CONF_ALARM_PHONE,
+                default=_get_default(CONF_ALARM_PHONE),
+            ): selector.TextSelector(selector.TextSelectorConfig()),
+            vol.Optional(
+                CONF_TEST_TOKEN,
+                default=_get_default(CONF_TEST_TOKEN, ""),
+            ): selector.TextSelector(selector.TextSelectorConfig()),
+            vol.Optional(
+                CONF_TEST_API_ENDPOINT,
+                default=_get_default(CONF_TEST_API_ENDPOINT, "https://api-sandbox.noonlight.com/dispatch/v1"),
             ): selector.TextSelector(selector.TextSelectorConfig()),
             vol.Required(
                 CONF_LOCATION_MODE,
@@ -308,10 +328,17 @@ class NoonlightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     title=self._data[CONF_NAME], data=self._data
                 )
             _LOGGER.debug(f"[async_step_user] self._data: {self._data}")
-            if self._data.get(CONF_LOCATION_MODE) == "latlong":
-                return await self.async_step_latlong()
-            else:
-                return await self.async_step_address()
+            
+            import re
+            phone = user_input.get(CONF_ALARM_PHONE, "")
+            if not re.match(r"^1\d{10}$", phone):
+                self._errors[CONF_ALARM_PHONE] = "invalid_phone"
+                
+            if not self._errors:
+                if self._data.get(CONF_LOCATION_MODE) == "latlong":
+                    return await self.async_step_latlong()
+                else:
+                    return await self.async_step_address()
 
         # Defaults
         defaults = {

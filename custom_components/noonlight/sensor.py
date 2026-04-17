@@ -22,6 +22,7 @@ async def async_setup_entry(
         NoonlightNextPollSensor(noonlight_integration),
         NoonlightTriggerTimeSensor(noonlight_integration),
         NoonlightTriggerReasonSensor(noonlight_integration),
+        NoonlightStatusSensor(noonlight_integration),
     ]
     
     async_add_entities(sensors)
@@ -112,3 +113,19 @@ class NoonlightTriggerReasonSensor(NoonlightSensorBase):
     def native_value(self):
         """Return the native value of the sensor."""
         return self.noonlight.trigger_reason
+
+class NoonlightStatusSensor(NoonlightSensorBase):
+    """Sensor to show the current alarm status from Noonlight."""
+    
+    def __init__(self, noonlight_integration):
+        super().__init__(noonlight_integration)
+        self._attr_name = "Alarm Status"
+        self._attr_unique_id = f"alarm_status_{self.noonlight.config.get('id', 'default')}"
+        self._attr_icon = "mdi:shield-account"
+
+    @property
+    def native_value(self):
+        """Return the native value of the sensor."""
+        if self.noonlight._alarm is not None:
+            return self.noonlight._alarm.status
+        return "Idle"

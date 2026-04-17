@@ -3,6 +3,7 @@ from noonlight import (
     NOONLIGHT_SERVICES_FIRE,
     NOONLIGHT_SERVICES_MEDICAL,
     NOONLIGHT_SERVICES_POLICE,
+    NOONLIGHT_SERVICES_OTHER,
 )
 
 VERSION = "v1.2.4"
@@ -11,11 +12,19 @@ DOMAIN = "noonlight"
 PLATFORMS = [Platform.SWITCH, Platform.SENSOR, Platform.BUTTON, Platform.SELECT, Platform.TEXT]
 
 DEFAULT_NAME = "Noonlight"
-DEFAULT_API_ENDPOINT = "https://api.noonlight.com/platform/v1"
+DEFAULT_API_ENDPOINT = "https://api.noonlight.com/dispatch/v1"
 DEFAULT_TOKEN_ENDPOINT = "https://noonlight.konnected.io/ha/token"
 
 CONF_SECRET = "secret"
 CONF_API_ENDPOINT = "api_endpoint"
+CONF_TEST_TOKEN = "test_token"
+CONF_ALARM_NAME = "alarm_name"
+CONF_ALARM_PHONE = "alarm_phone"
+CONF_TEST_API_ENDPOINT = "test_api_endpoint"
+CONF_ACTIVE_MODE = "active_mode"
+
+MODE_PRODUCTION = "Production"
+MODE_SANDBOX = "Sandbox"
 CONF_TOKEN_ENDPOINT = "token_endpoint"
 CONF_ADDRESS_LINE1 = "address1"
 CONF_ADDRESS_LINE2 = "address2"
@@ -32,6 +41,7 @@ CONST_NOONLIGHT_SERVICE_TYPES = (
     NOONLIGHT_SERVICES_POLICE,
     NOONLIGHT_SERVICES_FIRE,
     NOONLIGHT_SERVICES_MEDICAL,
+    NOONLIGHT_SERVICES_OTHER,
 )
 
 EVENT_NOONLIGHT_TOKEN_REFRESHED = "noonlight_token_refreshed"

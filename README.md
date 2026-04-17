@@ -42,6 +42,11 @@ Setup requires a U.S. based mobile phone number.
 
 * `Location Mode`: Choose between Latitude/Longitude or Address
 
+#### Dual Environment Support (Optional)
+
+* `Test Server Token`: A server token from the Noonlight developer portal to use for the Sandbox api.
+* `Test API Endpoint`: The endpoint for Sandbox testing (defaults to `https://api-sandbox.noonlight.com/dispatch/v1`).
+
 #### If Latitude/Longitude:
 
 * `Latitude`: Will default to Latitude in Home Assistant
@@ -93,18 +98,24 @@ Cancels an active alarm.
 Fields:
 - `pin`: Optional PIN to cancel the alarm.
 
-## Device and Entities (v1.2.2+)
+## Device and Entities (v1.2.4+)
 
-In version `v1.2.2`, the integration refactors the single switch into a full **Home Assistant Device** named "Noonlight Alarm". This device groups multiple entities for full visibility and control over the alarm lifecycle:
+In version `v1.2.4`, the integration groups multiple entities under a full **Home Assistant Device** named "Noonlight Alarm" for full visibility and control over the alarm lifecycle using the V2 Dispatch API:
 
 ### Control Entities
 - **Switch**: Triggers the alarm using the service type selected in the dropdown.
 - **Select (Alarm Type)**: Dropdown to choose the emergency service type (`police`, `fire`, `medical`, `other`) before triggering.
+- **Select (Environment Mode)**: Dropdown to switch between `Production` and `Sandbox` environments (only visible if a test token is configured).
 - **Text (Event Message)**: Text input to provide context messages for the "Send Event" button.
+- **Text (Alarm PIN)**: Text input to provide the PIN for cancellation.
 - **Button (Send Event)**: Sends the text from the "Event Message" box as an event to the active alarm.
-- **Button (Cancel Alarm)**: Cancels the active alarm (without PIN).
+- **Button (Cancel Alarm)**: Cancels the active alarm (uses PIN from "Alarm PIN" if provided).
+
+### API Diagnostics Box
+When you trigger an alarm or send an event, the integration creates a **Persistent Notification** in Home Assistant containing the details of the API call, including the endpoint, a masked version of the token used, and the full JSON payload. This helps verify that the correct environment and parameters are being used!
 
 ### Status Entities (Sensors)
+- **Alarm Status**: Displays the real-time status from the Noonlight API (e.g., ACTIVE, CANCELED).
 - **Last Event Sent**: Displays the details or type of the last event sent.
 - **Next Poll Time**: Indicates when the integration will next check the alarm status.
 - **Triggered Time**: Displays the timestamp when the alarm was activated.

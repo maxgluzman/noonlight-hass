@@ -39,14 +39,8 @@ class NoonlightCancelButton(ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle the button press."""
-        if self.noonlight._alarm is not None:
-            alarm_id = self.noonlight._alarm.id
-            _LOGGER.debug("Pressing cancel button for alarm %s", alarm_id)
-            # Note: This calls cancel without a PIN. If your account requires a PIN,
-            # you should use the noonlight.cancel_alarm service instead.
-            await self.noonlight.client.cancel_alarm(id=alarm_id)
-        else:
-            _LOGGER.warning("No active alarm to cancel")
+        pin = getattr(self.noonlight, 'pin_input', None)
+        await self.noonlight.cancel_alarm(pin=pin)
 
 class NoonlightSendEventButton(ButtonEntity):
     """Button to send a custom event to an active Noonlight alarm."""
@@ -76,7 +70,7 @@ class NoonlightSendEventButton(ButtonEntity):
             _LOGGER.debug("Sending event '%s' for alarm %s", event_text, alarm_id)
             
             from homeassistant.util import dt as dt_util
-            await self.noonlight.client.create_event(id=alarm_id, body=[{
+            event_body = [{
                 "event_type": "alarm.device.activated_alarm",
                 "event_time": dt_util.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                 "meta": {
@@ -84,7 +78,9 @@ class NoonlightSendEventButton(ButtonEntity):
                     "value": event_text,
                     "label": event_text
                 }
-            }])
+            }]
+            self.noonlight.show_api_diagnostic("Send Event", self.noonlight.active_client, f"{self.noonlight.active_client.alarms_url}/{alarm_id}/events", event_body)
+            await self.noonlight.active_client.create_event(id=alarm_id, body=event_body)
             self.noonlight.last_event = {"event_type": "alarm.device.activated_alarm", "meta": {"value": event_text}}
             from homeassistant.helpers.dispatcher import async_dispatcher_send
             async_dispatcher_send(self.noonlight.hass, "noonlight_alarm_state_changed")
