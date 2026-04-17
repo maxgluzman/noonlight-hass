@@ -77,7 +77,7 @@ create_verification:
 
 add_person:
   name: Add Person
-  description: Adds multiple people to an active alarm. Note: This can only be called once per alarm!
+  description: "Adds multiple people to an active alarm. Note: This can only be called once per alarm!"
   fields:
     people:
       name: People

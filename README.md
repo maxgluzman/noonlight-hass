@@ -93,6 +93,23 @@ Cancels an active alarm.
 Fields:
 - `pin`: Optional PIN to cancel the alarm.
 
+## Device and Entities (v1.2.2+)
+
+In version `v1.2.2`, the integration refactors the single switch into a full **Home Assistant Device** named "Noonlight Alarm". This device groups multiple entities for full visibility and control over the alarm lifecycle:
+
+### Control Entities
+- **Switch**: Triggers the alarm using the service type selected in the dropdown.
+- **Select (Alarm Type)**: Dropdown to choose the emergency service type (`police`, `fire`, `medical`, `other`) before triggering.
+- **Text (Event Message)**: Text input to provide context messages for the "Send Event" button.
+- **Button (Send Event)**: Sends the text from the "Event Message" box as an event to the active alarm.
+- **Button (Cancel Alarm)**: Cancels the active alarm (without PIN).
+
+### Status Entities (Sensors)
+- **Last Event Sent**: Displays the details or type of the last event sent.
+- **Next Poll Time**: Indicates when the integration will next check the alarm status.
+- **Triggered Time**: Displays the timestamp when the alarm was activated.
+- **Trigger Reason**: Shows the reason/context why the alarm was triggered.
+
 ## Automation Examples
 
 ### Notify Noonlight when an intrusion alarm is triggered
