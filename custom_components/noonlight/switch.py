@@ -67,8 +67,17 @@ class NoonlightSwitch(SwitchEntity):
         self._attr_unique_id = f"{self._alarm_type.lower()}_{Platform.SWITCH}_{
             self.noonlight.config.get('id', '')}"
         self._attr_name = DEFAULT_NAME
-        self._attr_icon = "mdi:police-badge"
         self._state = False
+
+    @property
+    def device_info(self):
+        """Return device information about this Noonlight Alarm."""
+        return {
+            "identifiers": {(DOMAIN, self.noonlight.config.get('id', 'default'))},
+            "name": "Noonlight Alarm",
+            "manufacturer": "Noonlight",
+            "model": "V2 Dispatch",
+        }
 
     @property
     def available(self):
@@ -94,7 +103,8 @@ class NoonlightSwitch(SwitchEntity):
     async def async_turn_on(self, **kwargs):
         """Activate an alarm. Defaults to `police` services."""
         if self.noonlight._alarm is None:
-            await self.noonlight.create_alarm()
+            selected_service = getattr(self.noonlight, 'selected_service', 'police')
+            await self.noonlight.create_alarm(alarm_types=[selected_service])
             if self.noonlight._alarm is not None:
                 self._state = True
 

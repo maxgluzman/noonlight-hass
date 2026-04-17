@@ -5,10 +5,10 @@ from noonlight import (
     NOONLIGHT_SERVICES_POLICE,
 )
 
-VERSION = "v1.2.0"
+VERSION = "v1.2.2"
 DOMAIN = "noonlight"
 
-PLATFORMS = [Platform.SWITCH]
+PLATFORMS = [Platform.SWITCH, Platform.SENSOR, Platform.BUTTON, Platform.SELECT, Platform.TEXT]
 
 DEFAULT_NAME = "Noonlight"
 DEFAULT_API_ENDPOINT = "https://api.noonlight.com/platform/v1"

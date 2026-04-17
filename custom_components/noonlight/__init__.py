@@ -141,6 +141,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 "event_time": dt_util.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                 "meta": meta
             }])
+            noonlight_integration.last_event = {"event_type": event_type, "meta": meta}
+            from homeassistant.helpers.dispatcher import async_dispatcher_send
+            async_dispatcher_send(hass, "noonlight_alarm_state_changed")
         else:
             _LOGGER.warning("No active alarm to send event to")
 
@@ -271,6 +274,11 @@ class NoonlightIntegration:
         self.addcity = self.config.get(CONF_CITY, "")
         self.addstate = self.config.get(CONF_STATE, "")
         self.addzip = self.config.get(CONF_ZIP, "")
+        
+        self.last_event = None
+        self.trigger_time = None
+        self.trigger_reason = None
+        self.next_poll_time = None
 
     @property
     def latitude(self):
