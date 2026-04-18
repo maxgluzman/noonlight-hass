@@ -16,11 +16,13 @@ async def async_setup_entry(
     """Set up the Noonlight select entities from a config entry."""
     noonlight_integration = hass.data[DOMAIN][config_entry.entry_id]
     
-    entities = [NoonlightServiceSelect(noonlight_integration)]
+    entities = []
     
-    # Only add the mode select if a test token was provided
+    # Add the mode select first if a test token was provided to put it at the top
     if getattr(noonlight_integration, 'test_token', ''):
         entities.append(NoonlightModeSelect(noonlight_integration))
+        
+    entities.append(NoonlightServiceSelect(noonlight_integration))
         
     async_add_entities(entities)
 
