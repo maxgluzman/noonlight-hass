@@ -520,9 +520,11 @@ class NoonlightIntegration:
                 "Accept": "application/json"
             }
             payload = {
-                "status": "CANCELED",
-                "pin": pin or self.alarm_pin
+                "status": "CANCELED"
             }
+            actual_pin = pin or self.alarm_pin
+            if actual_pin:
+                payload["pin"] = actual_pin
             
             _LOGGER.debug("Cancelling alarm via direct API call to %s", url)
             

@@ -131,9 +131,9 @@ async def _async_build_noonlight_schema(
                 CONF_ALARM_PHONE,
                 default=_get_default(CONF_ALARM_PHONE),
             ): selector.TextSelector(selector.TextSelectorConfig()),
-            vol.Required(
+            vol.Optional(
                 CONF_ALARM_PIN,
-                default=_get_default(CONF_ALARM_PIN),
+                default=_get_default(CONF_ALARM_PIN, ""),
             ): selector.TextSelector(selector.TextSelectorConfig()),
             vol.Optional(
                 CONF_TEST_TOKEN,
