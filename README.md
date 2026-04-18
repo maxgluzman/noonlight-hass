@@ -76,6 +76,9 @@ Fields:
 - `event_type`: Type of event (e.g., `alarm.device.activated_alarm`)
 - `meta`: Dictionary of metadata (e.g., `{ "attribute": "camera", "media": "http://example.com/video.mp4" }`)
 
+> [!TIP]
+> When sending media attachments (images or videos) via `send_event`, it is recommended to set `"attribute": "camera"` in the `meta` dictionary. Real-world testing shows that if you use other attributes like `smoke`, the dispatcher's console might only display the text event and not render the media!
+
 ### `noonlight.create_verification`
 Requests human verification for a specific prompt and media.
 
