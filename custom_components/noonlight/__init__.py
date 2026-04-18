@@ -522,7 +522,7 @@ class NoonlightIntegration:
             payload = {
                 "status": "CANCELED"
             }
-            actual_pin = pin or self.alarm_pin
+            actual_pin = pin if pin is not None else self.alarm_pin
             if actual_pin:
                 payload["pin"] = actual_pin
             
@@ -542,6 +542,19 @@ class NoonlightIntegration:
                     return True
                 else:
                     error_text = await resp.text()
+                    try:
+                        error_json = json.loads(error_text)
+                        if error_json.get("key") == "alarm_canceled" or "already been canceled" in error_json.get("details", "").lower():
+                            _LOGGER.info("Alarm %s was already cancelled. Syncing state to idle.", alarm_id)
+                            self._alarm = None
+                            if self._status_poll_interval is not None:
+                                self._status_poll_interval()
+                                self._status_poll_interval = None
+                            self.next_poll_time = None
+                            async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
+                            return True
+                    except json.JSONDecodeError:
+                        pass
                     _LOGGER.error("Failed to cancel alarm %s: %s", alarm_id, error_text)
                     return False
         else:
