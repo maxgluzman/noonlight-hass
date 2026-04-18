@@ -508,7 +508,7 @@ class NoonlightIntegration:
         if self._alarm is not None:
             alarm_id = self._alarm.id
             
-            if self.active_mode == "sandbox":
+            if self.active_mode.lower() == "sandbox":
                 token = self.test_token
             else:
                 token = self._access_token_response.get("token")
