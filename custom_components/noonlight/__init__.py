@@ -538,6 +538,7 @@ class NoonlightIntegration:
                         self._status_poll_interval()
                         self._status_poll_interval = None
                     self.next_poll_time = None
+                    async_dispatcher_send(self.hass, EVENT_NOONLIGHT_ALARM_CANCELED)
                     async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
                     return True
                 else:
@@ -551,6 +552,7 @@ class NoonlightIntegration:
                                 self._status_poll_interval()
                                 self._status_poll_interval = None
                             self.next_poll_time = None
+                            async_dispatcher_send(self.hass, EVENT_NOONLIGHT_ALARM_CANCELED)
                             async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
                             return True
                     except json.JSONDecodeError:
