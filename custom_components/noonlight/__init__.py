@@ -39,6 +39,7 @@ from .const import (
     CONF_TEST_API_ENDPOINT,
     CONF_ALARM_NAME,
     CONF_ALARM_PHONE,
+    CONF_ALARM_PIN,
     MODE_PRODUCTION,
     MODE_SANDBOX,
     CONST_ALARM_STATUS_ACTIVE,
@@ -287,6 +288,7 @@ class NoonlightIntegration:
         self.active_mode = MODE_PRODUCTION
         self.alarm_name = self.config.get(CONF_ALARM_NAME, "")
         self.alarm_phone = self.config.get(CONF_ALARM_PHONE, "")
+        self.alarm_pin = self.config.get(CONF_ALARM_PIN, "")
 
         # Add address portions, if exist
         self.addline1 = self.config.get(CONF_ADDRESS_LINE1, "")
@@ -299,6 +301,7 @@ class NoonlightIntegration:
         self.trigger_time = None
         self.trigger_reason = None
         self.next_poll_time = None
+        self._status_poll_interval = None
 
     @property
     def active_client(self):
@@ -473,8 +476,6 @@ class NoonlightIntegration:
                     self._alarm.id,
                     self._alarm.status,
                 )
-                cancel_interval = None
-
                 async def check_alarm_status_interval(now):
                     _LOGGER.debug("checking alarm status...")
                     self.next_poll_time = dt_util.utcnow() + timedelta(seconds=15)
@@ -483,15 +484,16 @@ class NoonlightIntegration:
                     if await self.update_alarm_status() == CONST_ALARM_STATUS_CANCELED:
                         _LOGGER.debug("alarm %s has been canceled!", self._alarm.id)
                         self.next_poll_time = None
-                        if cancel_interval is not None:
-                            cancel_interval()
+                        if self._status_poll_interval is not None:
+                            self._status_poll_interval()
+                            self._status_poll_interval = None
                         if self._alarm is not None:
                             if self._alarm.status == CONST_ALARM_STATUS_CANCELED:
                                 self._alarm = None
                         async_dispatcher_send(self.hass, EVENT_NOONLIGHT_ALARM_CANCELED)
                         async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
 
-                cancel_interval = async_track_time_interval(
+                self._status_poll_interval = async_track_time_interval(
                     self.hass, check_alarm_status_interval, timedelta(seconds=15)
                 )
                 self.next_poll_time = dt_util.utcnow() + timedelta(seconds=15)
@@ -514,14 +516,23 @@ class NoonlightIntegration:
                 "Content-Type": "application/json",
                 "Accept": "application/json"
             }
-            payload = {"status": "CANCELED"}
+            payload = {
+                "status": "CANCELED",
+                "pin": pin or self.alarm_pin
+            }
             
             _LOGGER.debug("Cancelling alarm via direct API call to %s", url)
+            
+            self.show_api_diagnostic("Cancel Alarm", self.active_client, url, payload)
             
             async with self._websession.post(url, headers=headers, json=payload) as resp:
                 if resp.status in (200, 204, 201):
                     _LOGGER.info("Successfully cancelled alarm %s", alarm_id)
                     self._alarm = None
+                    if self._status_poll_interval is not None:
+                        self._status_poll_interval()
+                        self._status_poll_interval = None
+                    self.next_poll_time = None
                     async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
                     return True
                 else:

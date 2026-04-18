@@ -29,9 +29,9 @@ async def async_setup_entry(
     async_add_entities(sensors)
     
     # Connect to dispatchers to force update if needed
-    def alarm_state_changed():
+    async def alarm_state_changed():
         for sensor in sensors:
-            sensor.async_schedule_update_ha_state()
+            sensor.async_write_ha_state()
             
     async_dispatcher_connect(hass, "noonlight_alarm_state_changed", alarm_state_changed)
 

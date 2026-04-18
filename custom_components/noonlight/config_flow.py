@@ -23,6 +23,7 @@ from .const import (
     CONF_TEST_API_ENDPOINT,
     CONF_ALARM_NAME,
     CONF_ALARM_PHONE,
+    CONF_ALARM_PIN,
     DEFAULT_API_ENDPOINT,
     DEFAULT_NAME,
     DEFAULT_TOKEN_ENDPOINT,
@@ -129,6 +130,10 @@ async def _async_build_noonlight_schema(
             vol.Required(
                 CONF_ALARM_PHONE,
                 default=_get_default(CONF_ALARM_PHONE),
+            ): selector.TextSelector(selector.TextSelectorConfig()),
+            vol.Required(
+                CONF_ALARM_PIN,
+                default=_get_default(CONF_ALARM_PIN),
             ): selector.TextSelector(selector.TextSelectorConfig()),
             vol.Optional(
                 CONF_TEST_TOKEN,
@@ -333,6 +338,10 @@ class NoonlightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             phone = user_input.get(CONF_ALARM_PHONE, "")
             if not re.match(r"^1\d{10}$", phone):
                 self._errors[CONF_ALARM_PHONE] = "invalid_phone"
+                
+            pin = user_input.get(CONF_ALARM_PIN, "")
+            if not re.match(r"^\d{4}$", pin):
+                self._errors[CONF_ALARM_PIN] = "invalid_pin"
                 
             if not self._errors:
                 if self._data.get(CONF_LOCATION_MODE) == "latlong":

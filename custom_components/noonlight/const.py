@@ -20,6 +20,7 @@ CONF_API_ENDPOINT = "api_endpoint"
 CONF_TEST_TOKEN = "test_token"
 CONF_ALARM_NAME = "alarm_name"
 CONF_ALARM_PHONE = "alarm_phone"
+CONF_ALARM_PIN = "alarm_pin"
 CONF_TEST_API_ENDPOINT = "test_api_endpoint"
 CONF_ACTIVE_MODE = "active_mode"
 
