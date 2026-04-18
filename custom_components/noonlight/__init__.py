@@ -130,9 +130,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         service = call.data.get("service", None)
         name = call.data.get("name", None)
         phone = call.data.get("phone", None)
+        pin = call.data.get("pin", None)
         workflow_id = call.data.get("workflow_id", None)
         await noonlight_integration.create_alarm(
-            alarm_types=[service], name=name, phone=phone, workflow_id=workflow_id
+            alarm_types=[service], name=name, phone=phone, pin=pin, workflow_id=workflow_id
         )
 
     hass.services.async_register(
@@ -417,7 +418,7 @@ class NoonlightIntegration:
         if self._alarm is not None:
             return await self._alarm.get_status()
 
-    async def create_alarm(self, alarm_types=[nl.NOONLIGHT_SERVICES_POLICE], name=None, phone=None, workflow_id=None):
+    async def create_alarm(self, alarm_types=[nl.NOONLIGHT_SERVICES_POLICE], name=None, phone=None, pin=None, workflow_id=None):
         """Create a new alarm"""
         services = {}
         for alarm_type in alarm_types or ():
@@ -432,6 +433,8 @@ class NoonlightIntegration:
                     alarm_body["name"] = actual_name
                 if actual_phone:
                     alarm_body["phone"] = actual_phone
+                if pin:
+                    alarm_body["pin"] = pin
                 if workflow_id:
                     alarm_body["workflow_id"] = workflow_id
 
