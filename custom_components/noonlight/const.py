@@ -9,7 +9,7 @@ from noonlight import (
 VERSION = "v1.2.4"
 DOMAIN = "noonlight"
 
-PLATFORMS = [Platform.SWITCH, Platform.SENSOR, Platform.BUTTON, Platform.SELECT, Platform.TEXT]
+PLATFORMS = [Platform.SELECT, Platform.TEXT, Platform.BUTTON, Platform.SWITCH, Platform.SENSOR]
 
 DEFAULT_NAME = "Noonlight"
 DEFAULT_API_ENDPOINT = "https://api.noonlight.com/dispatch/v1"

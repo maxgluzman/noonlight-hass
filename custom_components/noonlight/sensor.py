@@ -19,6 +19,7 @@ async def async_setup_entry(
     
     sensors = [
         NoonlightLastEventSensor(noonlight_integration),
+        NoonlightAlarmIdSensor(noonlight_integration),
         NoonlightNextPollSensor(noonlight_integration),
         NoonlightTriggerTimeSensor(noonlight_integration),
         NoonlightTriggerReasonSensor(noonlight_integration),
@@ -129,3 +130,19 @@ class NoonlightStatusSensor(NoonlightSensorBase):
         if self.noonlight._alarm is not None:
             return self.noonlight._alarm.status
         return "Idle"
+
+class NoonlightAlarmIdSensor(NoonlightSensorBase):
+    """Sensor to show the active alarm ID."""
+    
+    def __init__(self, noonlight_integration):
+        super().__init__(noonlight_integration)
+        self._attr_name = "Active Alarm ID"
+        self._attr_unique_id = f"alarm_id_{self.noonlight.config.get('id', 'default')}"
+        self._attr_icon = "mdi:identifier"
+
+    @property
+    def native_value(self):
+        """Return the native value of the sensor."""
+        if self.noonlight._alarm is not None:
+            return self.noonlight._alarm.id
+        return "None"

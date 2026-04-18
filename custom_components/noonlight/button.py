@@ -17,8 +17,8 @@ async def async_setup_entry(
     noonlight_integration = hass.data[DOMAIN][config_entry.entry_id]
     
     async_add_entities([
-        NoonlightCancelButton(noonlight_integration),
-        NoonlightSendEventButton(noonlight_integration)
+        NoonlightSendEventButton(noonlight_integration),
+        NoonlightCancelButton(noonlight_integration)
     ])
 
 class NoonlightCancelButton(ButtonEntity):

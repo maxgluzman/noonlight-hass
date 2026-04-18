@@ -477,8 +477,12 @@ class NoonlightIntegration:
 
                 async def check_alarm_status_interval(now):
                     _LOGGER.debug("checking alarm status...")
+                    self.next_poll_time = dt_util.utcnow() + timedelta(seconds=15)
+                    async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
+                    
                     if await self.update_alarm_status() == CONST_ALARM_STATUS_CANCELED:
                         _LOGGER.debug("alarm %s has been canceled!", self._alarm.id)
+                        self.next_poll_time = None
                         if cancel_interval is not None:
                             cancel_interval()
                         if self._alarm is not None:
@@ -490,6 +494,8 @@ class NoonlightIntegration:
                 cancel_interval = async_track_time_interval(
                     self.hass, check_alarm_status_interval, timedelta(seconds=15)
                 )
+                self.next_poll_time = dt_util.utcnow() + timedelta(seconds=15)
+                async_dispatcher_send(self.hass, "noonlight_alarm_state_changed")
 
     async def cancel_alarm(self, pin=None):
         """Cancel the active alarm via direct API call."""
