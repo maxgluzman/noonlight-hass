@@ -54,7 +54,7 @@ class NoonlightPinText(TextEntity):
         self.noonlight = noonlight_integration
         self._attr_name = "Alarm PIN"
         self._attr_unique_id = f"alarm_pin_{self.noonlight.config.get('id', 'default')}"
-        self._attr_native_value = ""
+        self._attr_native_value = self.noonlight.alarm_pin
         self._attr_icon = "mdi:numeric"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, self.noonlight.config.get('id', 'default'))},
